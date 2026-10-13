@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "402976310311",
+    "project_id": "harcama-takibi-ef5b3",
+    "storage_bucket": "harcama-takibi-ef5b3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:402976310311:android:7344ff7f42c6e8a2e0ba02",
+        "android_client_info": {
+          "package_name": "com.sumeyyedonbaloglu.harcamatakibi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUuRFuQ2ZlkZ3pVcay45A9n17h-9FYTJs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

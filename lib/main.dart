@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'pages/auth_gate.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const MyApp());
 }
 
@@ -16,8 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Harcama Takibi'),
+      home: const AuthGate(),
     );
   }
 }
-

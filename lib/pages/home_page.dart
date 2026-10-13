@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/money_transaction.dart';
 import '../widgets/transaction_form.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -42,7 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
               : () {
                   _deleteTransaction(transaction.id);
                 },
-          onSave: (type, amountInput, category,date) {
+          onSave: (type, amountInput, category, date) {
             return _saveTransaction(
               type,
               amountInput,
@@ -66,7 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
     //ekleme ve düzenlemeyi burada yöneticem
     TransactionType type,
     String amountInput,
-    String category, 
+    String category,
     DateTime date, {
     MoneyTransaction? existingTransaction, //düzenlenen eski kayıt
   }) {
@@ -177,6 +178,18 @@ class _MyHomePageState extends State<MyHomePage> {
     return null;
   }
 
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuth.instance
+          .signOut(); //burdaki signout firebasein signout fonk
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Çıkış yapılamadı. Tekrar dene.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final incomeMinor = _totalMinorFor(TransactionType.income);
@@ -202,6 +215,13 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
 
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            onPressed: _signOut,
+            icon: const Icon(Icons.logout),
+            tooltip: "Çıkış yap",
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

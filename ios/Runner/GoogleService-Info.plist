@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyBL-OVYr1b1a5i7IQ6S-RZMeSRQqU6Wo7M</string>
+	<key>GCM_SENDER_ID</key>
+	<string>402976310311</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.sumeyyedonbaloglu.harcamatakibi</string>
+	<key>PROJECT_ID</key>
+	<string>harcama-takibi-ef5b3</string>
+	<key>STORAGE_BUCKET</key>
+	<string>harcama-takibi-ef5b3.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:402976310311:ios:b2cb6c1fba50a6d5e0ba02</string>
+</dict>
+</plist>
