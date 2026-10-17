@@ -9,11 +9,10 @@ class TransactionForm extends StatefulWidget {
     this.onDelete,
   });
 
-  final VoidCallback?
-  onDelete; //VoidCallback->parametre almayan ve sonuç döndürmeyen fonk demek
+  final Future<String?> Function()? onDelete;
   final MoneyTransaction? transaction;
 
-  final String? Function(
+  final Future<String?> Function(
     TransactionType type,
     String amountInput,
     String category,
@@ -30,6 +29,7 @@ class _TransactionFormState extends State<TransactionForm> {
   String _selectedCategory = 'Diğer';
   DateTime _selectedDate = DateTime.now();
   String? errorText;
+  bool _isSaving =false;//şu an kayıt bekleniyor mu
 
   final _amountController = TextEditingController();
 
@@ -87,7 +87,7 @@ class _TransactionFormState extends State<TransactionForm> {
 
   Future<void> _confirmDelete() async {
     final onDelete = widget.onDelete;
-    if (onDelete == null) {
+    if (onDelete == null || _isSaving) {
       return;
     }
 
@@ -119,7 +119,26 @@ class _TransactionFormState extends State<TransactionForm> {
       return;
     }
 
-    onDelete();
+    setState(() {
+  _isSaving = true;
+  errorText = null;
+});
+
+    final error = await onDelete();
+
+    if (!mounted) return;
+
+    setState(() {
+  _isSaving = false;
+});
+
+    if (error != null) {
+      setState(() {
+        errorText = error;
+      });
+      return;
+    }
+
     Navigator.of(context).pop();
   }
 
@@ -241,13 +260,26 @@ class _TransactionFormState extends State<TransactionForm> {
                 ),
               ),
             ElevatedButton(
-              onPressed: () {
-                final error = widget.onSave(
+              onPressed: _isSaving ? null :() async {
+                if(_isSaving) return;
+                setState(() {
+                  _isSaving =true;
+                  errorText=null;
+                });
+
+                final error = await widget.onSave(
                   selectedType,
                   _amountController.text,
                   _selectedCategory,
                   _selectedDate,
                 );
+                if (!mounted || !context.mounted) {
+                  return;
+                }
+
+                setState((){
+                  _isSaving=false;
+                });
 
                 if (error != null) {
                   setState(() {
@@ -260,10 +292,13 @@ class _TransactionFormState extends State<TransactionForm> {
                   context,
                 ).pop(); //hata yoksa açılmış olan alt pencereyi kapatır
               },
-              child: Text(widget.transaction == null ? 'Ekle' : 'Kaydet'),
+              child: Text(
+                _isSaving ? 'İşleniyor...': widget.transaction==null ? 'Ekle' :'Kaydet',
+              ),
             ),
             if (widget.onDelete != null)
-              TextButton(onPressed: _confirmDelete, child: const Text('Sil')),
+              TextButton(onPressed: _isSaving ? null :_confirmDelete,
+              child:const Text('Sil')),
           ],
         ),
       ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/money_transaction.dart';
 import '../widgets/transaction_form.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../provider/transaction_provider.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -14,23 +16,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final List<MoneyTransaction> _transactions = [];
-
-  int _nextTransactionId = 1; //bu sayaç kayıtlara kimlik verecek
-
-  int _totalMinorFor(TransactionType type, {String? excludeId}) {
-    //isteğe bağlı parametre {} ile yazılır. String? ->değer verilmezse null olabilir demek
-    //listedeki gelir ve giderleri toplar
-    int total = 0;
-    for (final transaction in _transactions) {
-      if (transaction.type == type && transaction.id != excludeId) {
-        total = total + transaction.amountMinor;
-      }
-    } //bu fonksiyonda excludeid toplama eklemek istemediğimiz kayıt yani güncellenen kayıt
-
-    return total;
-  }
-
   void _showTransactionForm({MoneyTransaction? transaction}) {
     showModalBottomSheet<void>(
       context: context,
@@ -41,7 +26,7 @@ class _MyHomePageState extends State<MyHomePage> {
           onDelete: transaction == null
               ? null
               : () {
-                  _deleteTransaction(transaction.id);
+                  return _deleteTransaction(transaction.id);
                 },
           onSave: (type, amountInput, category, date) {
             return _saveTransaction(
@@ -57,32 +42,25 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _deleteTransaction(String id) {
-    setState(() {
-      _transactions.removeWhere((transaction) => transaction.id == id);
-    });
+  Future<String?> _deleteTransaction(String id) async {
+    final transactionProvider = context.read<TransactionProvider>();
+
+    try {
+      await transactionProvider.deleteTransaction(id);
+      return null;
+    } catch (error) {
+      return 'İşlem silinemedi. Tekrar deneyin.';
+    }
   }
 
-  String? _saveTransaction(
-    //ekleme ve düzenlemeyi burada yöneticem
+  Future<String?> _saveTransaction(
     TransactionType type,
     String amountInput,
     String category,
     DateTime date, {
-    MoneyTransaction? existingTransaction, //düzenlenen eski kayıt
-  }) {
-    //Düzenlenecek kayıtı bulalım
-    int existingIndex = -1; //düzenlenecek kaydın numarası
-
-    if (existingTransaction != null) {
-      existingIndex = _transactions.indexWhere(
-        (transaction) => transaction.id == existingTransaction.id,
-      );
-
-      if (existingIndex == -1) {
-        return 'Düzenlenecek kayıt bulunamadı.';
-      }
-    }
+    MoneyTransaction? existingTransaction,
+  }) async {
+    final transactionProvider = context.read<TransactionProvider>();
 
     final amountText = amountInput.trim();
     if (amountText.isEmpty) {
@@ -140,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     //gider sınırı ekledik 99999999999
-    final otherTotalMinor = _totalMinorFor(
+    final otherTotalMinor = transactionProvider.totalMinorFor(
       type,
       excludeId: existingTransaction?.id,
     );
@@ -156,7 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     final newTransaction = MoneyTransaction(
-      id: existingTransaction?.id ?? 'islem-$_nextTransactionId',
+      id: existingTransaction?.id ?? '',
       amountMinor: amountMinor,
       type: type,
       date: date,
@@ -164,18 +142,17 @@ class _MyHomePageState extends State<MyHomePage> {
       description: description,
     );
 
-    setState(() {
+    try {
       if (existingTransaction == null) {
-        //yeni eklenen kayıtsa
-        _transactions.add(newTransaction);
-        _nextTransactionId = _nextTransactionId + 1;
+        await transactionProvider.addTransaction(newTransaction);
       } else {
-        _transactions[existingIndex] = newTransaction; //düzenlenecek kayıtsa
+        await transactionProvider.updateTransaction(newTransaction);
       }
-      //setstate durumun değiştiğini bildiriyo fluttera ekran yeniden oluşsun istiyo
-    });
 
-    return null;
+      return null;
+    } catch (error) {
+      return 'İşlem kaydedilemedi. Tekrar deneyin.';
+    }
   }
 
   Future<void> _signOut() async {
@@ -192,11 +169,28 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final incomeMinor = _totalMinorFor(TransactionType.income);
-    final expenseMinor = _totalMinorFor(TransactionType.expense);
+    final transactionProvider = context.watch<TransactionProvider>();
+
+    if (transactionProvider.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final errorMessage = transactionProvider.errorMessage;
+
+    if (errorMessage != null) {
+      return Scaffold(body: Center(child: Text(errorMessage)));
+    }
+    final incomeMinor = transactionProvider.totalMinorFor(
+      TransactionType.income,
+    );
+    final expenseMinor = transactionProvider.totalMinorFor(
+      TransactionType.expense,
+    );
     final remainingMinor = incomeMinor - expenseMinor;
 
-    final sortedTransactions = List<MoneyTransaction>.of(_transactions);
+    final sortedTransactions = List<MoneyTransaction>.of(
+      transactionProvider.transactions,
+    );
 
     sortedTransactions.sort((first, second) {
       return second.date.compareTo(
@@ -272,7 +266,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              if (_transactions.isEmpty) const Text('Henüz işlem eklenmedi.'),
+              if (sortedTransactions.isEmpty)
+                const Text('Henüz işlem eklenmedi.'),
 
               for (int i = 0; i < sortedTransactions.length; i++)
                 Column(
